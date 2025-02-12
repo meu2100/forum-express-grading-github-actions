@@ -16,6 +16,11 @@ router.post('/signin', passport.authenticate('local', {
   failureRedirect: '/signin',
   failureFlash: true
 }), userController.signIn)
+router.delete(
+  '/comments/:id',
+  authenticatedAdmin,
+  commentController.deleteComment
+)
 router.post('/comments', authenticated, commentController.postComment)
 router.get('/logout', userController.logout)
 router.get('/restaurants/:id/dashboard', authenticated, restaurantController.getRestaurantDashboard)
