@@ -56,18 +56,22 @@ const restaurantController = {
     })
       .then(restaurant => {
         if (!restaurant) throw new Error("Restaurant didn't exist!")
-        return restaurant.increment('viewCounts')
-          .then(() => restaurant.reload({ // 確保重新加載關聯資料
+        return restaurant.increment('viewCounts').then(() =>
+          restaurant.reload({
+            // 確保重新加載關聯資料
             include: [
               Category,
               { model: Comment, include: User },
               { model: User, as: 'FavoritedUsers' },
               { model: User, as: 'LikedUsers' }
             ]
-          }))
+          })
+        )
       })
       .then(restaurant => {
-        const isFavorited = restaurant.FavoritedUsers.some(f => f.id === req.user.id)
+        const isFavorited = restaurant.FavoritedUsers.some(
+          f => f.id === req.user.id
+        )
         const isLiked = restaurant.LikedUsers.some(l => l.id === req.user.id)
 
         res.render('restaurant', {
@@ -115,6 +119,30 @@ const restaurantController = {
           restaurants,
           comments
         })
+      })
+      .catch(err => next(err))
+  },
+  getTopRestaurants: (req, res, next) => {
+    return Restaurant.findAll({
+      include: [
+        {
+          model: User,
+          as: 'FavoritedUsers'
+        }
+      ]
+    })
+      .then(restaurants => {
+        restaurants = restaurants.map(r => ({
+          ...r.dataValues,
+          description: r.dataValues.description.substring(0, 50),
+          favoritedCount: r.FavoritedUsers.length,
+          isFavorited:
+            req.user &&
+            req.user.FavoritedRestaurants.map(d => d.id).includes(r.id)
+        }))
+        restaurants.sort((a, b) => b.favoritedCount - a.favoritedCount)
+        restaurants = restaurants.slice(0, 10)
+        res.render('top-restaurants', { restaurants })
       })
       .catch(err => next(err))
   }
