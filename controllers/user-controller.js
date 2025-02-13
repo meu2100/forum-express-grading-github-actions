@@ -1,6 +1,6 @@
 const bcrypt = require('bcryptjs') // 載入 bcrypt
 const db = require('../models')
-const { User, Comment, Restaurant, Favorite, Like } = db
+const { User, Comment, Restaurant, Favorite, Like, Followship } = db
 const { localFileHandler } = require('../helpers/file-helpers')
 const userController = {
   signUpPage: (req, res) => {
@@ -166,7 +166,24 @@ const userController = {
       .then(() => res.redirect('back'))
       .catch(err => next(err))
   },
-
+  getTopUsers: (req, res, next) => {
+    return User.findAll({
+      include: [{ model: User, as: 'Followers' }]
+    })
+      .then(users => {
+        // 整理 users 資料，把每個 user 項目都拿出來處理一次，並把新陣列儲存在 users 裡
+        users = users.map(user => ({
+          // 整理格式
+          ...user.toJSON(),
+          // 計算追蹤者人數
+          followerCount: user.Followers.length,
+          // 判斷目前登入使用者是否已追蹤該 user 物件
+          isFollowed: req.user.Followings.some(f => f.id === user.id)
+        }))
+        res.render('top-users', { users: users })
+      })
+      .catch(err => next(err))
+  },
   logout: (req, res) => {
     req.flash('success_messages', '登出成功！')
     req.logout()
