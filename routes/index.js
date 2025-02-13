@@ -14,11 +14,12 @@ const { authenticated, authenticatedAdmin } = require('../middleware/auth')
 const { generalErrorHandler } = require('../middleware/error-handler')
 const upload = require('../middleware/multer')
 
+// ✅ 確保 `/admin` 內部的路由順序正確
 router.use('/admin', authenticatedAdmin, admin)
 
+// ✅ 使用者註冊 & 登入
 router.get('/signup', userController.signUpPage)
 router.post('/signup', userController.signUp)
-
 router.get('/signin', userController.signInPage)
 router.post(
   '/signin',
@@ -28,9 +29,9 @@ router.post(
   }),
   userController.signIn
 )
-
 router.get('/logout', userController.logout)
 
+// ✅ 使用者相關
 router.get('/users/topUsers', authenticated, userController.getTopUsers)
 router.get('/users/:id/edit', authenticated, userController.editUser)
 router.get('/users/:id', authenticated, userController.getUser)
@@ -41,45 +42,30 @@ router.put(
   userController.putUser
 )
 
+// ✅ 餐廳相關
 router.get('/restaurants/feeds', authenticated, restController.getFeeds)
-router.get(
-  '/restaurants/:id/dashboard',
-  authenticated,
-  restController.getRestaurantDashboard
-)
+router.get('/restaurants/:id/dashboard', authenticated, restController.getRestaurantDashboard)
 router.get('/restaurants/:id', authenticated, restController.getRestaurant)
 router.get('/restaurants', authenticated, restController.getRestaurants)
 
-router.delete(
-  '/comments/:id',
-  authenticatedAdmin,
-  commentController.deleteComment
-)
+// ✅ 評論相關
 router.post('/comments', authenticated, commentController.postComment)
+router.delete('/comments/:id', authenticatedAdmin, commentController.deleteComment)
 
-router.post(
-  '/favorite/:restaurantId',
-  authenticated,
-  userController.addFavorite
-)
-router.delete(
-  '/favorite/:restaurantId',
-  authenticated,
-  userController.removeFavorite
-)
-router.post(
-  '/like/:restaurantId',
-  authenticated,
-  userController.addLike
-)
-router.delete(
-  '/like/:restaurantId',
-  authenticated,
-  userController.removeLike
-)
+// ✅ 收藏 & 按讚
+router.post('/favorite/:restaurantId', authenticated, userController.addFavorite)
+router.delete('/favorite/:restaurantId', authenticated, userController.removeFavorite)
+router.post('/like/:restaurantId', authenticated, userController.addLike)
+router.delete('/like/:restaurantId', authenticated, userController.removeLike)
 
+// ✅ 追蹤 & 取消追蹤
+router.post('/following/:userId', authenticated, userController.addFollowing)
+router.delete('/following/:userId', authenticated, userController.removeFollowing)
+
+// ✅ 這條應該放在錯誤處理 middleware **之前**
 router.use('/', (req, res) => res.redirect('/restaurants'))
 
-router.use('/', generalErrorHandler)
+// ✅ 錯誤處理放在最後
+router.use(generalErrorHandler)
 
 module.exports = router
