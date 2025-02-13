@@ -23,7 +23,7 @@ module.exports = (sequelize, DataTypes) => {
         as: 'LikedUsers'
       })
     }
-  };
+  }
   Restaurant.init({
     name: DataTypes.STRING,
     tel: DataTypes.STRING,
