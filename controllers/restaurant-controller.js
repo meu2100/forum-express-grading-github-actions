@@ -37,26 +37,50 @@ const restaurantController = {
   },
   getRestaurant: (req, res, next) => {
     return Restaurant.findByPk(req.params.id, {
-      include: [
-        Category,
-        { model: Comment, include: User }
-      ],
+      include: [Category, { model: Comment, include: User }],
       nest: true
-    }).then(restaurant => {
-      if (!restaurant) throw new Error('Restaurant not found')
-      restaurant.increment('viewCounts', { by: 1 })
-      return res.render('restaurant', { restaurant: restaurant.toJSON() })
-    }).catch(err => next(err))
+    })
+      .then(restaurant => {
+        if (!restaurant) throw new Error('Restaurant not found')
+        restaurant.increment('viewCounts', { by: 1 })
+        return res.render('restaurant', { restaurant: restaurant.toJSON() })
+      })
+      .catch(err => next(err))
   },
   getRestaurantDashboard: (req, res, next) => {
     return Restaurant.findByPk(req.params.id, {
-      include: Category,
-      nest: true,
-      raw: true
-    }).then(restaurant => {
-      if (!restaurant) throw new Error('Restaurant not found')
-      return res.render('dashboards', { restaurant })
-    }).catch(err => next(err))
+      include: [Category, { model: Comment, include: User }]
+    })
+      .then(restaurant => {
+        if (!restaurant) throw new Error('Restaurant not found')
+        return res.render('dashboards', { restaurant: restaurant.toJSON() })
+      })
+      .catch(err => next(err))
+  },
+  getFeeds: (req, res, next) => {
+    return Promise.all([
+      Restaurant.findAll({
+        limit: 10,
+        order: [['createdAt', 'DESC']],
+        include: [Category],
+        raw: true,
+        nest: true
+      }),
+      Comment.findAll({
+        limit: 10,
+        order: [['createdAt', 'DESC']],
+        include: [User, Restaurant],
+        raw: true,
+        nest: true
+      })
+    ])
+      .then(([restaurants, comments]) => {
+        res.render('feeds', {
+          restaurants,
+          comments
+        })
+      })
+      .catch(err => next(err))
   }
 }
 module.exports = restaurantController
